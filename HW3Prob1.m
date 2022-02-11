@@ -2,21 +2,21 @@
 %prettier.
 
 
-tmp        = csvread('rates.csv',2); %ignore first row, since it has text column labels
+tmp        = csvread('rates.csv',1); %ignore first row, since it has text column labels
 GPS_lon    = tmp(:,1); %Longitude
 GPS_lat    = tmp(:,2); %Latitude
 GPS_x      = tmp(:,3); %Easting (in meters, UTM zone 11)
 GPS_y      = tmp(:,4); %Northing (in meters, UTM zone 11)
 GPS_UE     = tmp(:,5); %Displacement rate in the east direction, mm/yr 
 GPS_UN     = tmp(:,6); %Displacement rate in the north direction, mm/yr
-np         = length(tmp); %how many points do we have?
+nd         = length(tmp); %how many points do we have?
 
 %faults and coastlines for plotting.
-tmp        = csvread('faults.csv',2);
+tmp        = csvread('faults.csv',1);
 faults_lon = tmp(:,1);
 faults_lat = tmp(:,2);
 
-tmp        = csvread('coasts.csv',2);
+tmp        = csvread('coasts.csv',1);
 coast_lon  = tmp(:,1);
 coast_lat  = tmp(:,2);
 
@@ -62,13 +62,13 @@ ylabel('Latitude (degrees)')
 %G=[ T1 T2 U11 U12 U21 U22]
 
 
-%We are first doing this for all the data at once.
-%predefine vectors of ones and  of zeros, since we use them a bunch.
-z    = zeros(np,1); 
-o    = ones(np,1);
+%We are first doing this for all the data at once. (next week look at spatial variation)
+%First, predefine vectors of ones and  of zeros, since we use them a bunch.
+z    = zeros(nd,1); 
+o    = ones(nd,1);
 
-%The first "np" rows are the related to the eastward components of
-%displacement, the next np rows are related to the northward component of
+%The first "nd" rows are the related to the eastward components of
+%displacement, the next nd rows are related to the northward component of
 %displacement.  You can see that in our data, too.  Note which "chunks" of
 %G are zeroed out.
 
@@ -78,8 +78,8 @@ Gg   = inv(G'*G)*G';  %This is that master relationship that holds for when you 
 
 model   = Gg*data;          %inversion -> model
 synth   = G*model;          %model -> prediction/synthetic data
-sx      = synth(1:np);      %first np values are the eastward component
-sy      = synth(np+[1:np]); %next np values are the northward component
+sx      = synth(1:nd);      %first nd values are the eastward component
+sy      = synth(nd+[1:nd]); %next nd values are the northward component
 
 aug_UE  = [sx;0.05];
 aug_UN  = [sy;0];
@@ -169,13 +169,6 @@ title('All components')
 
 %now the eigenvector stuff
 [v,e]  = eig(E); %matrix of eigenvectors (u) and eigenvalues (diag e)
-v2       = v(:,2); 
-v1     =   v(:,1);
-e1       = e(2,2);
-e2       = e(1,1);
-e12      = (e1-e2)/2;
-thetap   = atan2(v1(1),v1(2))*180/pi;
-dilation = e1+e2;
 
 %plot principle components with arrows
 
@@ -194,12 +187,4 @@ for i=1:2
         quiver(-v(1,i)*e(i,i)*1e9,-v(2,i)*e(i,i)*1e9,v(1,i)*e(i,i),v(2,i)*e(i,i),1e9,'b','linewidth',5,'maxheadsize',20)
     end
 end
-return
-
-plot(eigxp,eigyp,'b')
-hold on
-plot(eigxn,eigyn,'r')
-text(3e-8,-1e-8,num2str(e1),'color','b')
-text(1e-8,5e-8,num2str(e2),'color','r')
-axis image
 
